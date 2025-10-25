@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2948618950129929512}
   - component: {fileID: 563103025019296866}
   - component: {fileID: 3921575811909792772}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wall_East
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,7 +97,7 @@ GameObject:
   - component: {fileID: 2967991792290468872}
   - component: {fileID: 2867442363108550616}
   - component: {fileID: 2306305199363947392}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wall_North
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -183,7 +183,7 @@ GameObject:
   - component: {fileID: 7175300799976331384}
   - component: {fileID: 1076778823939528475}
   - component: {fileID: 6605217648764127457}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Top_Plate
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -269,7 +269,7 @@ GameObject:
   - component: {fileID: 4943768159797066609}
   - component: {fileID: 7369957889840698363}
   - component: {fileID: 3124446330379942347}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Peg_0_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -353,7 +353,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3449543101957193706}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Base
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -390,7 +390,7 @@ GameObject:
   m_Component:
   - component: {fileID: 540345445870922168}
   - component: {fileID: 4555331581654637801}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: 1x2 Tall
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -447,7 +447,7 @@ GameObject:
   - component: {fileID: 3613865542980702276}
   - component: {fileID: 7225900395219066152}
   - component: {fileID: 8463001281458131337}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wall_West
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -533,7 +533,7 @@ GameObject:
   - component: {fileID: 6357764773857424461}
   - component: {fileID: 3707071371651047091}
   - component: {fileID: 789588483914121861}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Peg_0_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -619,7 +619,7 @@ GameObject:
   - component: {fileID: 3547035218517983584}
   - component: {fileID: 920923259153310724}
   - component: {fileID: 5923337585757908097}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wall_South
   m_TagString: Untagged
   m_Icon: {fileID: 0}

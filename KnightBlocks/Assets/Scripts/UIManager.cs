@@ -95,7 +95,7 @@ public class UIManager : MonoBehaviour
             {
                 buttonText.text = mat.name;
             }
-            
+
             // 3. FIX: Changed from onClick to onDwell to use your DwellSystem
             DwellSystem dwellComponent = newButton.GetComponent<DwellSystem>();
             if (dwellComponent != null)
@@ -107,7 +107,7 @@ public class UIManager : MonoBehaviour
     void OnBlockSelected(GameObject blockShape)
     {
         Debug.Log("Selected shape: " + blockShape.name);
-        
+
         // 1. Store the chosen shape
         tempSelectedShape = blockShape;
 
@@ -120,7 +120,7 @@ public class UIManager : MonoBehaviour
         Debug.Log("Selected Color: " + mat.name);
 
         // 1. Tell the BuildingManager to get ready with BOTH choices
-        //buildingManager.SetBlockToPlace(tempSelectedShape, mat);
+        buildingManager.SetBlockToPlace(tempSelectedShape, mat);
 
         // 2. Go back to the main screen
         ReturnToMain();

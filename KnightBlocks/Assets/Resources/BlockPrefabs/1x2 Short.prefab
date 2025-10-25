@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9104197718968633177}
   - component: {fileID: 6804775789978860051}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: 1x2 Short
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67,7 +67,7 @@ GameObject:
   - component: {fileID: 9097906125731233790}
   - component: {fileID: 6145425632637640640}
   - component: {fileID: 9103778071973227863}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wall_East
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -153,7 +153,7 @@ GameObject:
   - component: {fileID: 8406725709581430803}
   - component: {fileID: 5209778966712611272}
   - component: {fileID: 4376517299038618343}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wall_South
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -237,7 +237,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4250298838635160488}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Base
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -275,7 +275,7 @@ GameObject:
   - component: {fileID: 8781085186567498442}
   - component: {fileID: 4138598701880952928}
   - component: {fileID: 698695202004034259}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wall_West
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -361,7 +361,7 @@ GameObject:
   - component: {fileID: 6554064806729545792}
   - component: {fileID: 2150916812181988553}
   - component: {fileID: 3222251321381000111}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Peg_0_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -447,7 +447,7 @@ GameObject:
   - component: {fileID: 1094332533258331283}
   - component: {fileID: 4206908126708989118}
   - component: {fileID: 2207460932088821246}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Wall_North
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -533,7 +533,7 @@ GameObject:
   - component: {fileID: 7165489023319807592}
   - component: {fileID: 6897309514568743524}
   - component: {fileID: 2714587102175766301}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Top_Plate
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -619,7 +619,7 @@ GameObject:
   - component: {fileID: 1719280374242904795}
   - component: {fileID: 6765814522744025779}
   - component: {fileID: 6565742898355648395}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Peg_0_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
