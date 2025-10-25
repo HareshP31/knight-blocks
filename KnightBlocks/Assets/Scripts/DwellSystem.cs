@@ -18,6 +18,10 @@ public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public static MonoBehaviour coroutineRunner;
 
+    [Header("Pointer Hold Events")]
+    public UnityEvent onPointerEnterEvent;
+    public UnityEvent onPointerExitEvent;
+
     private void Update()
     {
         if (isPointerOver)
@@ -45,6 +49,7 @@ public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void OnPointerEnter(PointerEventData eventData)
     {
         isPointerOver = true;
+        onPointerEnterEvent.Invoke();
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -52,6 +57,7 @@ public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         isPointerOver = false;
         isTimerRunning = false;
         dwellTimer = 0f;
+        onPointerExitEvent.Invoke();
     }
 
     private void TriggerDwell()
@@ -76,7 +82,7 @@ public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         isAnyButtonCoolingDown = false;
         Debug.Log("Global cooldown for dwell buttons ended.");
     }
-    
+
     private void OnDisable()
     {
         isPointerOver = false;

@@ -25,12 +25,9 @@ public class UIManager : MonoBehaviour
 
     private void Awake()
     {
-        // Tell the DwellSystem that THIS script (which is always active)
-        // is the official coroutine runner.
         DwellSystem.coroutineRunner = this;
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         colorMaterials = Resources.LoadAll<Material>("ColorMaterials");
