@@ -500,7 +500,11 @@ GameObject:
   - component: {fileID: 1361348670746004648}
   - component: {fileID: 2372134165198681769}
   m_Layer: 0
+<<<<<<< HEAD:KnightBlocks/Assets/Prefabs/Block_2x2_Composite.prefab
   m_Name: Wall_South
+=======
+  m_Name: 2x2
+>>>>>>> 6eb6b69241e2a56e22f8d00bf2378aa9a1786c9b:KnightBlocks/Assets/Resources/BlockPrefabs/2x2.prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
