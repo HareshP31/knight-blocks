@@ -16,7 +16,7 @@ public class UIManager : MonoBehaviour
 
     [Header("Color Menu")]
     Material[] colorMaterials;
-    
+
     public int yOffset;
 
 
@@ -30,15 +30,15 @@ public class UIManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        Transform buttonContainer = returnButton.transform.parent;
-        RectTransform returnButtonRect = returnButton.GetComponent<RectTransform>();
+        Transform buttonContainer = blockReturnButton.transform.parent;
+        RectTransform returnButtonRect = blockReturnButton.GetComponent<RectTransform>();
         float startY = returnButtonRect.anchoredPosition.y;
         float startX = returnButtonRect.anchoredPosition.x;
 
         colorMaterials = Resources.LoadAll<Material>("BlockMaterials");
 
         // You can now loop through them or use them
-        foreach (Material mat in blockMaterials)
+        foreach (Material mat in colorMaterials)
         {
             Debug.Log("Loaded material: " + mat.name);
         }
@@ -47,7 +47,7 @@ public class UIManager : MonoBehaviour
         int currentYChange = yOffset;
         foreach (GameObject block in blockPrefabs)
         {
-            GameObject newButton = Instantiate(returnButton, buttonContainer);
+            GameObject newButton = Instantiate(blockReturnButton, buttonContainer);
 
             RectTransform newButtonRect = newButton.GetComponent<RectTransform>();
             newButtonRect.anchoredPosition = new Vector2(startX, startY - currentYChange);
@@ -71,7 +71,7 @@ public class UIManager : MonoBehaviour
 
         foreach (Material mat in colorMaterials)
         {
-            GameObject newButton = Instantiate(returnButton, buttonContainer);
+            GameObject newButton = Instantiate(blockReturnButton, buttonContainer);
 
             RectTransform newButtonRect = newButton.GetComponent<RectTransform>();
             newButtonRect.anchoredPosition = new Vector2(startX, startY - currentYChange);
@@ -98,6 +98,11 @@ public class UIManager : MonoBehaviour
         Debug.Log("Selected block: " + blockToPlace.name);
         // buildingManager.StartPlacingBlock(blockToPlace);
 
+    }
+
+    void OnColorSelected(Material mat)
+    {
+        Debug.Log("Selected Color: " + mat.name);
     }
 
     public void OpenFileList()
