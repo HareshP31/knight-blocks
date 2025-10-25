@@ -5,13 +5,10 @@ using System.Collections;
 
 public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    [Tooltip("How long to 'hover' before triggering the event.")]
     public float dwellTime = 1.5f;
 
-    [Tooltip("A grace period after activation where no dwell buttons can be triggered.")]
     public float activationCooldown = 1f;
 
-    [Tooltip("This event will be fired after the dwell time.")]
     public UnityEvent onDwell;
     public static bool isAnyButtonCoolingDown = false;
 

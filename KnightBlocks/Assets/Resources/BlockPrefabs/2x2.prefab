@@ -290,7 +290,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7064108171720850816}
   m_Layer: 0
-  m_Name: Block_2x2_Composite
+  m_Name: 2x2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

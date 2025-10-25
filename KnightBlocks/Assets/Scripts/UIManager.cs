@@ -7,12 +7,18 @@ public class UIManager : MonoBehaviour
     public GameObject defaultList;
     public GameObject fileList;
     public GameObject blockList;
+    public GameObject colorList;
 
     [Header("Block Menu")]
     GameObject[] blockPrefabs;
-    public GameObject returnButton;
+    public GameObject blockReturnButton;
     public BuildingManager buildingManager;
+
+    [Header("Color Menu")]
+    Material[] colorMaterials;
+    
     public int yOffset;
+
 
     private void Awake()
     {
@@ -20,7 +26,7 @@ public class UIManager : MonoBehaviour
         // is the official coroutine runner.
         DwellSystem.coroutineRunner = this;
     }
-    
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -28,6 +34,14 @@ public class UIManager : MonoBehaviour
         RectTransform returnButtonRect = returnButton.GetComponent<RectTransform>();
         float startY = returnButtonRect.anchoredPosition.y;
         float startX = returnButtonRect.anchoredPosition.x;
+
+        colorMaterials = Resources.LoadAll<Material>("BlockMaterials");
+
+        // You can now loop through them or use them
+        foreach (Material mat in blockMaterials)
+        {
+            Debug.Log("Loaded material: " + mat.name);
+        }
 
         blockPrefabs = Resources.LoadAll<GameObject>("BlockPrefabs");
         int currentYChange = yOffset;
@@ -54,6 +68,30 @@ public class UIManager : MonoBehaviour
                 buttonComponent.onClick.AddListener(() => OnBlockSelected(block));
             }
         }
+
+        foreach (Material mat in colorMaterials)
+        {
+            GameObject newButton = Instantiate(returnButton, buttonContainer);
+
+            RectTransform newButtonRect = newButton.GetComponent<RectTransform>();
+            newButtonRect.anchoredPosition = new Vector2(startX, startY - currentYChange);
+
+            currentYChange += yOffset;
+
+            TextMeshProUGUI buttonText = newButton.GetComponentInChildren<TextMeshProUGUI>();
+            Debug.Log("Creating button for color: " + mat.name + " bttxt: " + buttonText);
+            if (buttonText != null)
+            {
+                buttonText.text = mat.name;
+            }
+
+            Button buttonComponent = newButton.GetComponent<Button>();
+
+            if (buttonComponent != null)
+            {
+                buttonComponent.onClick.AddListener(() => OnColorSelected(mat));
+            }
+        }
     }
     void OnBlockSelected(GameObject blockToPlace)
     {
@@ -67,17 +105,28 @@ public class UIManager : MonoBehaviour
         defaultList.SetActive(false);
         fileList.SetActive(true);
         blockList.SetActive(false);
+        colorList.SetActive(false);
     }
     public void OpenBlockList()
     {
         defaultList.SetActive(false);
         fileList.SetActive(false);
         blockList.SetActive(true);
+        colorList.SetActive(false);
     }
     public void ReturnToMain()
     {
         defaultList.SetActive(true);
         fileList.SetActive(false);
         blockList.SetActive(false);
+        colorList.SetActive(false);
+    }
+
+    public void OpenColorList()
+    {
+        defaultList.SetActive(false);
+        fileList.SetActive(false);
+        blockList.SetActive(false);
+        colorList.SetActive(true);
     }
 }
