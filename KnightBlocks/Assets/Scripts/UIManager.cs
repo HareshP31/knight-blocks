@@ -15,9 +15,12 @@ public class UIManager : MonoBehaviour
     public BuildingManager buildingManager;
 
     [Header("Color Menu")]
+    public GameObject colorReturnButton;
     Material[] colorMaterials;
 
     public int yOffset;
+
+    GameObject tempSelectedShape;
 
 
     private void Awake()
@@ -30,24 +33,25 @@ public class UIManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        colorMaterials = Resources.LoadAll<Material>("ColorMaterials");
+        blockPrefabs = Resources.LoadAll<GameObject>("BlockPrefabs");
+
+        InitializeBlockList();
+        InitializeColorList();
+    }
+
+    void InitializeBlockList()
+    {
         Transform buttonContainer = blockReturnButton.transform.parent;
         RectTransform returnButtonRect = blockReturnButton.GetComponent<RectTransform>();
         float startY = returnButtonRect.anchoredPosition.y;
         float startX = returnButtonRect.anchoredPosition.x;
-
-        colorMaterials = Resources.LoadAll<Material>("BlockMaterials");
-
-        // You can now loop through them or use them
-        foreach (Material mat in colorMaterials)
-        {
-            Debug.Log("Loaded material: " + mat.name);
-        }
-
-        blockPrefabs = Resources.LoadAll<GameObject>("BlockPrefabs");
         int currentYChange = yOffset;
-        foreach (GameObject block in blockPrefabs)
+
+        foreach (GameObject blockShape in blockPrefabs)
         {
             GameObject newButton = Instantiate(blockReturnButton, buttonContainer);
+            newButton.SetActive(true); // Make sure it's visible
 
             RectTransform newButtonRect = newButton.GetComponent<RectTransform>();
             newButtonRect.anchoredPosition = new Vector2(startX, startY - currentYChange);
@@ -55,23 +59,34 @@ public class UIManager : MonoBehaviour
             currentYChange += yOffset;
 
             TextMeshProUGUI buttonText = newButton.GetComponentInChildren<TextMeshProUGUI>();
-            Debug.Log("Creating button for block: " + block.name + "bttxt: " + buttonText);
             if (buttonText != null)
             {
-                buttonText.text = block.name;
+                buttonText.text = blockShape.name;
             }
 
-            Button buttonComponent = newButton.GetComponent<Button>();
-
-            if (buttonComponent != null)
+            // 3. FIX: Changed from onClick to onDwell to use your DwellSystem
+            DwellSystem dwellComponent = newButton.GetComponent<DwellSystem>();
+            if (dwellComponent != null)
             {
-                buttonComponent.onClick.AddListener(() => OnBlockSelected(block));
+                dwellComponent.onDwell.AddListener(() => OnBlockSelected(blockShape));
             }
         }
+    }
+
+    void InitializeColorList()
+    {
+        // --- Use the COLOR button's parent and template ---
+        Transform buttonContainer = colorReturnButton.transform.parent;
+        RectTransform returnButtonRect = colorReturnButton.GetComponent<RectTransform>();
+        float startY = returnButtonRect.anchoredPosition.y;
+        float startX = returnButtonRect.anchoredPosition.x;
+        int currentYChange = yOffset; // Reset offset for this new list
 
         foreach (Material mat in colorMaterials)
         {
-            GameObject newButton = Instantiate(blockReturnButton, buttonContainer);
+            // --- Instantiate the COLOR return button ---
+            GameObject newButton = Instantiate(colorReturnButton, buttonContainer);
+            newButton.SetActive(true); // Make sure it's visible
 
             RectTransform newButtonRect = newButton.GetComponent<RectTransform>();
             newButtonRect.anchoredPosition = new Vector2(startX, startY - currentYChange);
@@ -79,30 +94,39 @@ public class UIManager : MonoBehaviour
             currentYChange += yOffset;
 
             TextMeshProUGUI buttonText = newButton.GetComponentInChildren<TextMeshProUGUI>();
-            Debug.Log("Creating button for color: " + mat.name + " bttxt: " + buttonText);
             if (buttonText != null)
             {
                 buttonText.text = mat.name;
             }
-
-            Button buttonComponent = newButton.GetComponent<Button>();
-
-            if (buttonComponent != null)
+            
+            // 3. FIX: Changed from onClick to onDwell to use your DwellSystem
+            DwellSystem dwellComponent = newButton.GetComponent<DwellSystem>();
+            if (dwellComponent != null)
             {
-                buttonComponent.onClick.AddListener(() => OnColorSelected(mat));
+                dwellComponent.onDwell.AddListener(() => OnColorSelected(mat));
             }
         }
     }
-    void OnBlockSelected(GameObject blockToPlace)
+    void OnBlockSelected(GameObject blockShape)
     {
-        Debug.Log("Selected block: " + blockToPlace.name);
-        // buildingManager.StartPlacingBlock(blockToPlace);
+        Debug.Log("Selected shape: " + blockShape.name);
+        
+        // 1. Store the chosen shape
+        tempSelectedShape = blockShape;
 
+        // 2. Open the color menu
+        OpenColorList();
     }
 
     void OnColorSelected(Material mat)
     {
         Debug.Log("Selected Color: " + mat.name);
+
+        // 1. Tell the BuildingManager to get ready with BOTH choices
+        //buildingManager.SetBlockToPlace(tempSelectedShape, mat);
+
+        // 2. Go back to the main screen
+        ReturnToMain();
     }
 
     public void OpenFileList()
