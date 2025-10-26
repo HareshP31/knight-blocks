@@ -77,6 +77,31 @@ public class BuildingManager : MonoBehaviour
         }
     }
 
+    public void RotateCurrentBlock()
+    {
+        if (currentPlacingBlock == null)
+        {
+            Debug.Log("RotateCurrentBlock: No block is being placed.");
+            return; // Not holding a block, do nothing
+        }
+
+        Debug.Log("Rotating block!");
+
+        // 1. Rotate the block 90 degrees on the Y axis (around its center)
+        currentPlacingBlock.transform.Rotate(0, 90f, 0);
+
+        // 2. Swap the X and Z size for the grid logic
+        // This is CRITICAL for the snapping logic to work correctly after rotation
+        float oldX = currentBlockSize.x;
+        float oldZ = currentBlockSize.z;
+        currentBlockSize.x = oldZ;
+        currentBlockSize.z = oldX;
+
+        // Note: You might need to re-run the snapping logic here if the rotation
+        // causes the current snapped position to be invalid (e.g., if you
+        // bring back the IsPositionOccupied check). For now, we just rotate.
+    }
+
     void Update()
     {
         // If we are not currently holding a block, do nothing

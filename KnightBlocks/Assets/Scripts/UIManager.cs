@@ -18,6 +18,9 @@ public class UIManager : MonoBehaviour
     public GameObject colorReturnButton;
     Material[] colorMaterials;
 
+    [Header("Rotation Menu")]
+    public GameObject rotateButton;
+
     public int yOffset;
 
     GameObject tempSelectedShape;
@@ -30,11 +33,17 @@ public class UIManager : MonoBehaviour
 
     void Start()
     {
+        if (rotateButton == null)
+        {
+            Debug.LogError("UIManager: 'Rotate Button' is not assigned in the Inspector!");
+        }
+
         colorMaterials = Resources.LoadAll<Material>("ColorMaterials");
         blockPrefabs = Resources.LoadAll<GameObject>("BlockPrefabs");
 
         InitializeBlockList();
         InitializeColorList();
+        InitializeRotateControls();
     }
 
     void InitializeBlockList()
@@ -104,6 +113,24 @@ public class UIManager : MonoBehaviour
             }
         }
     }
+
+    void InitializeRotateControls() // <<< CALLED BY Start()
+    {
+        if (rotateButton != null)
+        {
+            DwellSystem dwellComponent = rotateButton.GetComponent<DwellSystem>();
+            if (dwellComponent != null)
+            {
+                // This line connects the Dwell event to our OnRotatePressed function below
+                dwellComponent.onDwell.AddListener(() => OnRotatePressed());
+            }
+            else
+            {
+                Debug.LogError($"Rotate Button '{rotateButton.name}' is missing the DwellSystem component!");
+            }
+        }
+    }
+
     void OnBlockSelected(GameObject blockShape)
     {
         Debug.Log("Selected shape: " + blockShape.name);
@@ -124,6 +151,20 @@ public class UIManager : MonoBehaviour
 
         // 2. Go back to the main screen
         ReturnToMain();
+    }
+
+    public void OnRotatePressed() // <<< TRIGGERED BY DwellSystem
+    {
+        Debug.Log("Rotate Button Dwell Detected!");
+        if (buildingManager != null)
+        {
+            // Tells the building manager to rotate its current block
+            buildingManager.RotateCurrentBlock(); // <<< CALLS THE OTHER SCRIPT
+        }
+        else
+        {
+            Debug.LogError("UIManager.OnRotatePressed: BuildingManager is not assigned!");
+        }
     }
 
     public void OpenFileList()
