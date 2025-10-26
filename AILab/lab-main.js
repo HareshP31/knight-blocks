@@ -18,106 +18,14 @@ const winkLeftIndicator = document.getElementById('wink-left-indicator');
 const winkRightIndicator = document.getElementById('wink-right-indicator');
 const rotateIndicator = document.getElementById('rotate-indicator');
 const rotateValue = document.getElementById('rotate-value');
+// --- End Task 1.3 ---
 
-// Status Panel
-const aiStatusIndicator = document.getElementById('ai-status-indicator');
-const statusText = document.getElementById('status-text');
-const statusLog = document.getElementById('status-log');
 
-function waitForWebGazer() {
-  logToPanel("Loading gaze tracking library...");
-  return new Promise((resolve, reject) => {
-    let attempts = 0;
-    const maxAttempts = 300; // Wait for max 5 seconds (50 * 100ms)
-    
-    const check = () => {
-      // Check if the main object AND the function we need exist
-      if (window.webgazer && typeof window.webgazer.setVideoElement === 'function') {
-        logToPanel("WebGazer.js library is ready.");
-        resolve();
-      } else if (attempts > maxAttempts) {
-        reject(new Error("WebGazer.js failed to load in time."));
-      } else {
-        // Wait and check again
-        attempts++;
-        setTimeout(check, 100); 
-      }
-    };
-    check(); // Start checking
-  });
-}
+// --- Main Sandbox Logic ---
 
-// --- 3. Main App "Start" Logic ---
-startButton.addEventListener('click', async () => {
-  logToPanel("Initializing Sandbox...");
-  startButton.disabled = true;
-
-  try {
-    // 1. Start the webcam feed
-    await startWebcam();
-    logToPanel("Webcam activated.");
-
-    startButton.textContent = "Loading Gaze Library...";
-    await waitForWebGazer();
-
-    // 2. Load MediaPipe model (for winks/rotation)
-    startButton.textContent = "Loading Gesture Model...";
-    await createFaceLandmarker(); // This fires 'ai_ready'
-    
-    // 3. Init & Start MediaPipe
-    // This connects the engine to the video and canvas elements
-    init(video, canvas);
-    startPredictionLoop(); // This starts winks/rotation
-    logToPanel("Gesture detection (winks, rotate) is active.");
-
-    // 4. Start Hands-Free Gaze Calibration
-    logToPanel("Starting hands-free gaze calibration...");
-    startButton.textContent = "Calibrating... Look at the dots!";
-    
-    // This is the async function from AIEngine.js
-    // It will take ~30 seconds
-    await startCalibration(); 
-    
-    // 5. All Done!
-    logToPanel("Calibration complete! Gaze tracking is now active.");
-    startButton.textContent = "All Systems Active";
-    startButton.style.display = 'none'; // Hide the start button
-    gazeDot.style.display = 'block'; // Show the gaze dot
-
-  } catch (err) {
-    console.error(err);
-    logToPanel(`ERROR: ${err.message}`, 'error');
-    startButton.textContent = "Error - Refresh Page";
-  }
-});
-
-/**
- * Helper function to start the webcam
- */
-async function startWebcam() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    throw new Error('Webcam access is not supported by this browser.');
-  }
-
-  const constraints = { video: { width: 1280, height: 720 } };
-  const stream = await navigator.mediaDevices.getUserMedia(constraints);
-  
-  video.srcObject = stream;
-  
-  return new Promise((resolve) => {
-    video.onloadedmetadata = () => {
-      // Set canvas size to match video feed
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      resolve();
-    };
-  });
-}
-
-// --- 4. Event Listeners ---
-// These listeners wait for your AIEngine to fire custom events
-
-// --- Status Listeners ---
+// 1. Add a "listener" for the 'ai_ready' event from AIEngine.js
+// This ensures we don't let the user click "Start" until the
+// AI model is fully loaded.
 window.addEventListener('ai_ready', () => {
     statusText.textContent = "AI Model Ready. Click Start.";
     startButton.disabled = false;
