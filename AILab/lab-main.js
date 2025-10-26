@@ -27,7 +27,7 @@ function waitForWebGazer() {
   logToPanel("Loading gaze tracking library...");
   return new Promise((resolve, reject) => {
     let attempts = 0;
-    const maxAttempts = 300; // Wait for max 5 seconds (50 * 100ms)
+    const maxAttempts = 30000; // Wait for max 5 seconds (50 * 100ms)
     
     const check = () => {
       // Check if the main object AND the function we need exist
