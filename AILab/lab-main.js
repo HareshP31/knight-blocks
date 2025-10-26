@@ -2,7 +2,8 @@
 import {
   init, 
   createFaceLandmarker,
-  startPredictionLoop
+  startPredictionLoop,
+  startCalibration
 } from "../AI/AIEngine.js";
 
 // --- Task 1.3: Get references to all HTML elements ---
@@ -18,14 +19,7 @@ const winkLeftIndicator = document.getElementById('wink-left-indicator');
 const winkRightIndicator = document.getElementById('wink-right-indicator');
 const rotateIndicator = document.getElementById('rotate-indicator');
 const rotateValue = document.getElementById('rotate-value');
-// --- End Task 1.3 ---
 
-
-// --- Main Sandbox Logic ---
-
-// 1. Add a "listener" for the 'ai_ready' event from AIEngine.js
-// This ensures we don't let the user click "Start" until the
-// AI model is fully loaded.
 window.addEventListener('ai_ready', () => {
     statusText.textContent = "AI Model Ready. Click Start.";
     startButton.disabled = false;
@@ -73,17 +67,20 @@ async function startAISystem() {
             // It tells the engine which video and canvas to use.
             init(video, canvas);
 
+            statusText.textContent = "Calibrating... Look at the screen.";
+            aiStatusIndicator.classList.remove('bg-gray-500');
+            aiStatusIndicator.classList.add('bg-yellow-500'); // Yellow for "calibrating"
+
+            // Call the new calibration function
+            startCalibration();
+
             // --- 5. Start the AI Prediction Loop ---
             // This function is in AIEngine.js.
             // It starts the requestAnimationFrame() loop.
             startPredictionLoop();
 
             // --- 6. Update UI ---
-            statusText.textContent = "AI Running!";
-            aiStatusIndicator.classList.remove('bg-gray-500');
-            aiStatusIndicator.classList.add('bg-green-500');
-            startButton.textContent = "AI Active";
-            gazeDot.style.display = 'block';
+            startButton.textContent = "Calibrating...";
         });
 
     } catch (error) {
@@ -145,4 +142,17 @@ window.addEventListener('ai_rotate', (e) => {
         rotateIndicator.classList.remove('active');
         rotateValue.textContent = "--";
     }, 500); // Hold for 500ms
+});
+
+window.addEventListener('ai_calibration_complete', () => {
+    console.log("Lab received: Calibration Complete!");
+
+    // --- Now, update the UI to "AI Active" ---
+    statusText.textContent = "AI Running!";
+    aiStatusIndicator.classList.remove('bg-yellow-500');
+    aiStatusIndicator.classList.add('bg-green-500');
+    startButton.textContent = "AI Active";
+
+    // --- NOW we show the gaze dot ---
+    gazeDot.style.display = 'block';
 });

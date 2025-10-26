@@ -6,7 +6,7 @@ import {
 
 // --- Model Variables ---
 let faceModel;      // Model 1: Fast, lightweight for Winks/Rotation
-let irisModel;      // Model 2: Precision, includes Iris for Gaze
+let irisModel;      // Model 2: Precision, includes Iris for Gaze (still loaded but not used for cursor)
 let video;
 let canvasCtx;
 let drawingUtils;
@@ -18,17 +18,25 @@ const RIGHT_EYE_INDICES = [33, 160, 158, 133, 153, 144];
 const LEFT_IRIS_INDICES = [474, 475, 476, 477];
 const RIGHT_IRIS_INDICES = [469, 470, 471, 472];
 
-// --- Tuning Knobs ---
-const WINK_EAR_THRESHOLD = 0.25;
-const WINK_CONSECUTIVE_FRAMES = 3;
-const GAZE_SMOOTHING_FACTOR = 0.1;
-const YAW_THRESHOLD = 15.0;
-const YAW_RESET_THRESHOLD = 5.0;
-const GAZE_X_OFFSET_MIN = -0.001;
-const GAZE_X_OFFSET_MAX = 0.001;
-const GAZE_Y_OFFSET_MIN = -0.0025;
-const GAZE_Y_OFFSET_MAX = 0.0025;
-const GAZE_Y_BOOST = 1.5;
+// --- Tuning Knobs (Adjusted for Head Tracking) ---
+let WINK_EAR_THRESHOLD = 0.25;
+let WINK_CONSECUTIVE_FRAMES = 3;
+let GAZE_SMOOTHING_FACTOR = 0.15; // Increased smoothing for head movement
+let YAW_THRESHOLD = 15.0;
+let YAW_RESET_THRESHOLD = 5.0;
+
+// REPURPOSED FOR HEAD TRACKING: These are the bounds for the face center
+// A face center typically ranges from 0.3 to 0.7 normalized, so these are starting points
+let HEAD_X_OFFSET_MIN = 0.40;
+let HEAD_X_OFFSET_MAX = 0.60;
+let HEAD_Y_OFFSET_MIN = 0.35;
+let HEAD_Y_OFFSET_MAX = 0.65;
+let HEAD_Y_BOOST = 1.0; // Head tracking usually doesn't need vertical boost
+
+let isCalibrating = false; // Corrected spelling
+let calibrationReadingsX = [];
+let calibrationReadingsY = [];
+let CALIBRATION_FRAMES = 100;
 
 // --- State Variables ---
 let leftWinkCounter = 0, rightWinkCounter = 0;
@@ -73,8 +81,6 @@ function calculateEAR(landmarks, eyeIndices) {
     if (horizontalDist === 0) return 0.5; // Avoid division by zero
     return (verticalDist1 + verticalDist2) / (2.0 * horizontalDist);
 }
-
-
 async function createLandmarker(modelPath) {
   const filesetResolver = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
@@ -85,11 +91,9 @@ async function createLandmarker(modelPath) {
       runningMode: "VIDEO",
       numFaces: 1,
       outputFacialTransformationMatrixes: true,
-      outputFaceBlendshapes: true // Required for both models (enables iris in the heavy one)
+      outputFaceBlendshapes: true
     });
 }
-
-
 async function createFaceLandmarker() {
   console.log("Loading AI Engine models...");
   
@@ -109,15 +113,10 @@ async function createFaceLandmarker() {
   }
 }
 
-
 async function loadIrisModel() {
   console.log("Loading AI Model (Attempting Iris via Lightweight + Flag) in background...");
   try {
-    // --- TRYING LIGHTWEIGHT PATH + BLENDSHAPES FLAG ---
-    const modelPath = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'; // Cache bust
-    // --- END CHANGE ---
-
-    // We still use createLandmarker helper, which correctly sets outputFaceBlendshapes: true
+    const modelPath = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'; 
     irisModel = await createLandmarker(modelPath);
 
     console.log("AI Model (Secondary Load Attempt) loaded successfully.");
@@ -186,18 +185,14 @@ function predictWebcam() {
     
     console.log("Number of landmarks received:", landmarks.length)
 
-    // Always run Wink and Rotation detection (if faceModel is loaded)
-    if (faceModel && landmarks) {
+    // Always run Head Tracking, Wink, and Rotation detection (if face landmarks are available)
+    if (landmarks) {
+      trackHead(landmarks); 
       detectWinks(landmarks);
       if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
         transformationMatrix = results.facialTransformationMatrixes[0];
         detectRotation(transformationMatrix);
       }
-    }
-    
-    // ONLY run Gaze tracking if the precision model is loaded
-    if (irisModel && landmarks) {
-      trackGaze(landmarks); 
     }
     
     // --- Draw Debug Mesh ---
@@ -249,37 +244,48 @@ function detectWinks(landmarks) {
   }
 }
 
-function trackGaze(landmarks) {
-    // Calculates relative iris offset and fires 'ai_gaze' events
-    // Ensure landmarks exist before calculating
-    if (!landmarks[LEFT_EYE_INDICES[0]] || !landmarks[RIGHT_EYE_INDICES[0]] || !landmarks[LEFT_IRIS_INDICES[0]] || !landmarks[RIGHT_IRIS_INDICES[0]]) {
+function trackHead(landmarks) {
+    // Calculates cursor position based on normalized face center
+    if (!landmarks[LEFT_EYE_INDICES[0]] || !landmarks[RIGHT_EYE_INDICES[0]]) {
         return; // Skip if essential landmarks are missing
     }
 
     const leftEyeCenter = getAveragePoint(landmarks, LEFT_EYE_INDICES);
     const rightEyeCenter = getAveragePoint(landmarks, RIGHT_EYE_INDICES);
-    const leftIrisCenter = getAveragePoint(landmarks, LEFT_IRIS_INDICES);
-    const rightIrisCenter = getAveragePoint(landmarks, RIGHT_IRIS_INDICES);
+
+    // Face center is the midpoint between the two eye centers (normalized 0.0 to 1.0)
+    const rawX = (leftEyeCenter.x + rightEyeCenter.x) / 2;
+    const rawY = (leftEyeCenter.y + rightEyeCenter.y) / 2;
     
-    // Check for valid iris centers (can be {x:0, y:0} if getAveragePoint failed)
-    if (leftIrisCenter.x === 0.5 && leftIrisCenter.y === 0.5 && rightIrisCenter.x === 0.5 && rightIrisCenter.y === 0.5) {
-        return; // Skip if iris landmarks weren't found
+    // --- CALIBRATION LOGIC ---
+    if (isCalibrating) {
+        // GATHER DATA: The rawX/rawY are the ABSOLUTE normalized face center.
+        calibrationReadingsX.push(rawX);
+        calibrationReadingsY.push(rawY);
+
+        // CHECK IF CALIBRATION IS DONE
+        if (calibrationReadingsY.length >= CALIBRATION_FRAMES) {
+            finishCalibration();
+        }
+
+        return; // DO NOT MOVE THE DOT YET.
     }
+    // --- END CALIBRATION LOGIC ---
 
-    const irisOffsetX = ((leftIrisCenter.x - leftEyeCenter.x) + (rightIrisCenter.x - rightEyeCenter.x)) / 2;
-    const irisOffsetY = ((leftIrisCenter.y - leftEyeCenter.y) + (rightIrisCenter.y - rightEyeCenter.y)) / 2;
-
-    console.log(`Raw Vertical Offset (irisOffsetY): ${irisOffsetY.toFixed(5)}`);
+    console.log(`Raw Face Center (normalized): x=${rawX.toFixed(4)}, y=${rawY.toFixed(4)}`);
     
-    let normalizedX = mapValue(irisOffsetX, GAZE_X_OFFSET_MIN, GAZE_X_OFFSET_MAX, 0.0, 1.0);
-    let normalizedY = mapValue(irisOffsetY, GAZE_Y_OFFSET_MIN, GAZE_Y_OFFSET_MAX, 0.0, 1.0);
+    // Map the face center from the user's calibrated range to the screen's 0.0-1.0 range
+    let normalizedX = mapValue(rawX, HEAD_X_OFFSET_MIN, HEAD_X_OFFSET_MAX, 0.0, 1.0);
+    let normalizedY = mapValue(rawY, HEAD_Y_OFFSET_MIN, HEAD_Y_OFFSET_MAX, 0.0, 1.0);
     
-    normalizedY = 0.5 + (normalizedY - 0.5) * GAZE_Y_BOOST;
+    // Apply Y-boost (though usually 1.0 for head tracking)
+    normalizedY = 0.5 + (normalizedY - 0.5) * HEAD_Y_BOOST;
     normalizedY = Math.max(0.0, Math.min(1.0, normalizedY));
     
     const finalX = 1.0 - normalizedX; // Invert X for mirrored video
     const finalY = normalizedY;
     
+    // Apply smoothing
     smoothedGazeX += (finalX - smoothedGazeX) * GAZE_SMOOTHING_FACTOR;
     smoothedGazeY += (finalY - smoothedGazeY) * GAZE_SMOOTHING_FACTOR;
 
@@ -313,9 +319,50 @@ function getHeadYaw(matrixData) {
     return yawRadians * (180 / Math.PI); // Convert to degrees
 }
 
+function finishCalibration() {
+    isCalibrating = false;
+
+    // Calculate the average (center) face position
+    const avgX = calibrationReadingsX.reduce((a, b) => a + b, 0) / calibrationReadingsX.length;
+    const avgY = calibrationReadingsY.reduce((a, b) => a + b, 0) / calibrationReadingsY.length;
+
+    console.log(`--- CALIBRATION COMPLETE ---`);
+    console.log(`Average Center X: ${avgX.toFixed(5)}`);
+    console.log(`Average Center Y: ${avgY.toFixed(5)}`);
+
+    // Define a "range" or "width" for head movement
+    // These values determine sensitivity. A larger number means LESS sensitivity (you have to move your head further).
+    const headRangeX = 0.06; // Adjust this value for horizontal sensitivity
+    const headRangeY = 0.06; // Adjust this value for vertical sensitivity
+
+    // Set the new dynamic offsets based on the user's average
+    HEAD_X_OFFSET_MIN = avgX - headRangeX;
+    HEAD_X_OFFSET_MAX = avgX + headRangeX;
+    HEAD_Y_OFFSET_MIN = avgY - headRangeY;
+    HEAD_Y_OFFSET_MAX = avgY + headRangeY;
+
+    // Clear the arrays
+    calibrationReadingsX = [];
+    calibrationReadingsY = [];
+
+    // Tell the UI (lab-main.js) that we are done!
+    window.dispatchEvent(new CustomEvent('ai_calibration_complete'));
+}
+
+function startCalibration() {
+    console.log(`Starting calibration... Look at the center.`);
+    // Reset state
+    isCalibrating = true;
+    calibrationReadingsX = [];
+    calibrationReadingsY = [];
+
+    // (No setTimeout needed, it will finish when trackHead() fills the array)
+}
+
 // --- Exports ---
 export {
   createFaceLandmarker, // Main entry point
   init,
-  startPredictionLoop
+  startPredictionLoop,
+  startCalibration
 }
