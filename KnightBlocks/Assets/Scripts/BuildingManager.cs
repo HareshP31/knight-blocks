@@ -11,11 +11,16 @@ public class BuildingManager : MonoBehaviour
     // --- RENAMED: This is now the 'ghost' material ---
     [Tooltip("The transparent material to use while placing.")]
     public Material ghostMaterial;
+    public UIManager uiManager;
 
     private GameObject currentPlacingBlock;
     private Material currentFinalMaterial; // The solid material we'll apply on place
     private Vector3 currentBlockSize;
-
+    private GameObject tempBlockPrefab;
+    private Material tempBlockMaterial;
+    private float oldX;
+    private float oldZ;
+    private bool rotated;
 
     void Start()
     {
@@ -37,6 +42,8 @@ public class BuildingManager : MonoBehaviour
     /// </summary>
     public void SetBlockToPlace(GameObject blockPrefab, Material blockMaterial)
     {
+        tempBlockPrefab = blockPrefab;
+        tempBlockMaterial = blockMaterial;
         // If we're already holding a block, destroy it
         if (currentPlacingBlock != null)
         {
@@ -61,20 +68,10 @@ public class BuildingManager : MonoBehaviour
             Debug.LogError("Prefab " + blockPrefab.name + " is missing a root Box or Capsule Collider! Snapping will be incorrect.");
             currentBlockSize = Vector3.one; // Fallback
         }
-
+        oldX = currentBlockSize.x;
+        oldZ = currentBlockSize.z;
         // Create the new "ghost" block at the origin
-        currentPlacingBlock = Instantiate(blockPrefab, Vector3.zero, Quaternion.identity);
-
-        // --- UPDATED: Store the FINAL material, but apply the GHOST material ---
-        currentFinalMaterial = blockMaterial;
-        SetBlockMaterial(ghostMaterial); // Make it transparent immediately
-
-        // Disable colliders so it doesn't block its own raycast
-        Collider[] colliders = currentPlacingBlock.GetComponentsInChildren<Collider>();
-        foreach (Collider c in colliders)
-        {
-            c.enabled = false;
-        }
+        CreateGhostBlock();
     }
 
     public void RotateCurrentBlock()
@@ -88,14 +85,24 @@ public class BuildingManager : MonoBehaviour
         Debug.Log("Rotating block!");
 
         // 1. Rotate the block 90 degrees on the Y axis (around its center)
-        currentPlacingBlock.transform.Rotate(0, 90f, 0);
-
+        if (rotated)
+        {
+            rotated = false;
+            currentPlacingBlock.transform.Rotate(0, -90f, 0);
+            currentBlockSize.x = oldX;
+            currentBlockSize.z = oldZ;
+        }
+        else
+        {
+            rotated = true;
+            currentPlacingBlock.transform.Rotate(0, 90f, 0);
+            currentBlockSize.x = oldZ;
+            currentBlockSize.z = oldX;
+        }
         // 2. Swap the X and Z size for the grid logic
         // This is CRITICAL for the snapping logic to work correctly after rotation
-        float oldX = currentBlockSize.x;
-        float oldZ = currentBlockSize.z;
-        currentBlockSize.x = oldZ;
-        currentBlockSize.z = oldX;
+
+        
 
         // Note: You might need to re-run the snapping logic here if the rotation
         // causes the current snapped position to be invalid (e.g., if you
@@ -109,7 +116,10 @@ public class BuildingManager : MonoBehaviour
         {
             return;
         }
-
+        if (!uiManager.rotateButton.activeSelf)
+        {
+            uiManager.ShowRotateButton(true);
+        }
         // We are holding a block, so make it follow the cursor on the grid
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
@@ -127,6 +137,14 @@ public class BuildingManager : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 PlaceBlock();
+            }
+
+            if (Input.GetMouseButtonDown(1))
+            {
+                // Right-click to cancel placement
+                Destroy(currentPlacingBlock);
+                currentPlacingBlock = null;
+                uiManager.ShowRotateButton(false);
             }
         }
     }
@@ -193,9 +211,15 @@ public class BuildingManager : MonoBehaviour
 
         // Set its layer to "Blocks" so it can be built upon
         SetLayerRecursively(currentPlacingBlock, LayerMask.NameToLayer("Blocks"));
-
-        // We are no longer holding this block
+        currentBlockSize.x = oldX;
+        currentBlockSize.z = oldZ;
         currentPlacingBlock = null;
+        CreateGhostBlock();
+        if (rotated)
+        {
+            rotated = false;
+            RotateCurrentBlock();
+        }
     }
 
     /// <summary>
@@ -207,6 +231,30 @@ public class BuildingManager : MonoBehaviour
         foreach (Transform child in obj.transform)
         {
             SetLayerRecursively(child.gameObject, newLayer);
+        }
+    }
+
+    private void CreateGhostBlock()
+    {
+        if (tempBlockPrefab == null || tempBlockMaterial == null)
+        {
+            Debug.LogError("CreateGhostBlock: Temp block prefab or material is null!");
+            return;
+        }
+
+        currentPlacingBlock = Instantiate(tempBlockPrefab, Vector3.zero, Quaternion.identity);
+
+        // Set the ghost material
+        SetBlockMaterial(ghostMaterial);
+
+        // Store the final material for later
+        currentFinalMaterial = tempBlockMaterial;
+
+        // Disable colliders while placing
+        Collider[] colliders = currentPlacingBlock.GetComponentsInChildren<Collider>();
+        foreach (Collider c in colliders)
+        {
+            c.enabled = false;
         }
     }
 }

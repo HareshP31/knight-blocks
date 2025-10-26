@@ -105,7 +105,6 @@ public class UIManager : MonoBehaviour
                 buttonText.text = mat.name;
             }
 
-            // 3. FIX: Changed from onClick to onDwell to use your DwellSystem
             DwellSystem dwellComponent = newButton.GetComponent<DwellSystem>();
             if (dwellComponent != null)
             {
@@ -114,14 +113,13 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    void InitializeRotateControls() // <<< CALLED BY Start()
+    void InitializeRotateControls()
     {
         if (rotateButton != null)
         {
             DwellSystem dwellComponent = rotateButton.GetComponent<DwellSystem>();
             if (dwellComponent != null)
             {
-                // This line connects the Dwell event to our OnRotatePressed function below
                 dwellComponent.onDwell.AddListener(() => OnRotatePressed());
             }
             else
@@ -135,10 +133,8 @@ public class UIManager : MonoBehaviour
     {
         Debug.Log("Selected shape: " + blockShape.name);
 
-        // 1. Store the chosen shape
         tempSelectedShape = blockShape;
 
-        // 2. Open the color menu
         OpenColorList();
     }
 
@@ -146,20 +142,17 @@ public class UIManager : MonoBehaviour
     {
         Debug.Log("Selected Color: " + mat.name);
 
-        // 1. Tell the BuildingManager to get ready with BOTH choices
         buildingManager.SetBlockToPlace(tempSelectedShape, mat);
 
-        // 2. Go back to the main screen
         ReturnToMain();
     }
 
-    public void OnRotatePressed() // <<< TRIGGERED BY DwellSystem
+    public void OnRotatePressed()
     {
         Debug.Log("Rotate Button Dwell Detected!");
         if (buildingManager != null)
         {
-            // Tells the building manager to rotate its current block
-            buildingManager.RotateCurrentBlock(); // <<< CALLS THE OTHER SCRIPT
+            buildingManager.RotateCurrentBlock();
         }
         else
         {
@@ -195,5 +188,13 @@ public class UIManager : MonoBehaviour
         fileList.SetActive(false);
         blockList.SetActive(false);
         colorList.SetActive(true);
+    }
+
+    public void ShowRotateButton(bool show)
+    {
+        if (rotateButton != null)
+        {
+            rotateButton.SetActive(show);
+        }
     }
 }
