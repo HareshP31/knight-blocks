@@ -21,8 +21,11 @@ public class UIManager : MonoBehaviour
     [Header("Rotation Menu")]
     public GameObject rotateButton;
 
-    public int yOffset;
+    [Header("AI Bridge")]
+    public AIBridgeCommunicator aiBridge;
+    private bool isAIInitialized = false;
 
+    public int yOffset;
     GameObject tempSelectedShape;
 
 
@@ -44,6 +47,29 @@ public class UIManager : MonoBehaviour
         InitializeBlockList();
         InitializeColorList();
         InitializeRotateControls();
+    }
+
+    void Update()
+    {
+        if (isAIInitialized)
+        {
+            return;
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            isAIInitialized = true;
+
+            if (aiBridge != null)
+            {
+                Debug.Log("UIManager: First click detected, initiating AI system...");
+                aiBridge.InitiateAISystem();
+            }
+            else
+            {
+                Debug.LogError("UIManager: 'AI Bridge' is not assigned in the Inspector! Cannot start AI.");
+            }
+        }
     }
 
     void InitializeBlockList()

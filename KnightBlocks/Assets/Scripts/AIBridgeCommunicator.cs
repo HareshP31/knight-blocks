@@ -1,83 +1,93 @@
 using System.Runtime.InteropServices;
 using UnityEngine;
+using System.Globalization; // Required for parsing floats correctly
 
 public class AIBridgeCommunicator : MonoBehaviour
 {
     // --------------------------------------------------------------------------
-    // 1. C# -> JavaScript Functions (Calling the AI System Start)
-    //    These MUST match the function names defined in AIBridge.jslib exactly.
+    // 1. C# -> JavaScript Functions (This part was already correct)
     // --------------------------------------------------------------------------
 
     [DllImport("__Internal")]
     private static extern void StartAIBridge();
 
     // --------------------------------------------------------------------------
-    // 2. Public Interface (Called by Unity to start the system)
+    // 2. Public Interface (This part was already correct)
     // --------------------------------------------------------------------------
 
-    /// <summary>
-    /// Initiates the AI Engine by calling the JavaScript bridge function.
-    /// This should be called once the Unity scene is ready (e.g., from a UI button or Start()).
-    /// </summary>
     public void InitiateAISystem()
     {
         Debug.Log("InitiateAISystem called in C#!");
-        // The DllImport calls are only valid in a WebGL build.
 #if !UNITY_EDITOR && UNITY_WEBGL
-            Debug.Log("C# initiating AI system via StartAIBridge...");
-            StartAIBridge();
+        Debug.Log("C# initiating AI system via StartAIBridge...");
+        StartAIBridge();
 #else
         Debug.LogWarning("AI System initiated, but DllImport calls are skipped in the Unity Editor.");
-        // For editor testing, you might mock data calls here.
 #endif
     }
 
     // --------------------------------------------------------------------------
-    // 3. JavaScript -> C# Receiver Methods (Called by main-controller.js via AIBridge.jslib)
-    //    The names and signatures MUST match the placeholders in AIBridge.jslib.
+    // 3. JavaScript -> C# Receiver Methods (FIXED)
+    //    These names and parameters now match the "SendMessage" calls
+    //    from the corrected main-controller.js
     // --------------------------------------------------------------------------
 
     /// <summary>
-    /// Receives normalized head/gaze coordinates from JavaScript.
-    /// Matches GazeEventReceiver in AIBridge.jslib.
+    /// Receives gaze data as a string "x,y" from JavaScript.
+    /// Matches: SendMessage("AIBridgeReceiver", "OnGazeUpdate", "0.5,0.6");
     /// </summary>
-    public void GazeEventReceiver(float x, float y)
+    public void OnGazeUpdate(string data)
     {
-        // Data is normalized (0.0 to 1.0) and inverted (x is mirrored).
-        // Use this for cursor position or camera movement in Unity.
-        Debug.Log($"[JS -> C#] Gaze/Head Position: X={x:F4}, Y={y:F4}");
+        // data will be a string like "0.75,0.32"
+        string[] parts = data.Split(',');
 
-        // Example: Convert to screen pixel coordinates if needed
-        // Vector3 screenPos = new Vector3(x * Screen.width, y * Screen.height, 0);
+        if (parts.Length == 2)
+        {
+            if (float.TryParse(parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out float x) &&
+                float.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out float y))
+            {
+                // Now you have the x and y floats
+                Debug.Log($"[JS -> C#] Gaze Position: X={x:F4}, Y={y:F4}");
+                
+                // --- TODO: Add your cursor control logic here ---
+                // e.g., MoveCursor(x, y);
+            }
+        }
     }
 
     /// <summary>
     /// Receives action commands ('select' or 'deselect') from JavaScript.
-    /// Matches ActionReceiver in AIBridge.jslib.
+    /// Matches: SendMessage("AIBridgeReceiver", "OnAction", "select");
     /// </summary>
-    public void ActionReceiver(string actionType)
+    public void OnAction(string actionType)
     {
-        // Use this to trigger button clicks or object selection.
+        // actionType will be "select" or "deselect"
         Debug.Log($"[JS -> C#] Action Received: {actionType}");
+
+        // --- TODO: Add your selection logic here ---
     }
 
     /// <summary>
     /// Receives head rotation commands ('left' or 'right') from JavaScript.
-    /// Matches RotationReceiver in AIBridge.jslib.
+    /// Matches: SendMessage("AIBridgeReceiver", "OnRotate", "left");
     /// </summary>
-    public void RotationReceiver(string direction)
+    public void OnRotate(string direction)
     {
-        // Use this to pan a camera or scroll a menu.
+        // direction will be "left" or "right"
         Debug.Log($"[JS -> C#] Rotation Received: {direction}");
+
+        // --- TODO: Add your rotation logic here ---
     }
 
     /// <summary>
-    /// Receives notification that JavaScript's dynamic calibration is complete.
-    /// Matches CalibrationCompleteReceiver in AIBridge.jslib.
+    /// Receives notification that JavaScript's calibration is complete.
+    /// Matches: SendMessage("AIBridgeReceiver", "OnCalibrationComplete", "");
     /// </summary>
-    public void CalibrationCompleteReceiver()
+    public void OnCalibrationComplete(string emptyData)
     {
-        // Use this to hide a "Calibrating..." UI screen in Unity.
+        // We don't need the 'emptyData', but the method signature must accept a string.
         Debug.Log("[JS -> C#] AI Calibration Complete! Head tracking is live.");
+
+        // --- TODO: Add your logic to hide "Calibrating..." UI ---
     }
 }
