@@ -1,14 +1,13 @@
 // lab-main.js
 
 import {
-  init, 
-  createFaceLandmarker,
-  startPredictionLoop,
-  startCalibration
+    init,
+    createFaceLandmarker,
+    startPredictionLoop,
+    startCalibration
 } from "./AIEngine.js"; // <-- Path corrected for deployment
 
 // --- UI Elements are ONLY used for local testing in lab.html ---
-// They are kept here but their associated event listeners are removed/modified.
 const video = document.getElementById('webcam-feed');
 const canvas = document.getElementById('debug-canvas');
 const startButton = document.getElementById('start-button');
@@ -29,9 +28,9 @@ window.addEventListener('ai_ready', () => {
 });
 
 // --- RENAMED TO startAIAssistant for global access by the .jslib ---
-async function startAISystem() { 
+async function startAISystem() {
     // ... (Your existing logic for getting webcam, initializing, and starting calibration) ...
-    
+
     // Disable button to prevent double-clicks
     startButton.disabled = true;
     statusText.textContent = "Requesting webcam access...";
@@ -66,16 +65,24 @@ async function startAISystem() {
 
 
 // --------------------------------------------------------------------------------
-// --- NEW BRIDGE IMPLEMENTATION: Listen for AIEngine events and call C# methods ---
+// --- BRIDGE IMPLEMENTATION: Listen for AIEngine events and call C# methods ---
 // --------------------------------------------------------------------------------
 
 window.addEventListener('ai_gaze', (e) => {
-    const gazeData = e.detail;
-    
+    const gazeData = e.detail; // e.g., { x: 0.5, y: 0.5 }
+
     // 1. CALL C# BRIDGE: Pass normalized coordinates to Unity
-    // We must check if the function exists, as it won't in the local lab.html test.
-    if (typeof GazeEventReceiver === 'function') {
-        GazeEventReceiver(gazeData.x, gazeData.y);
+    // We must check if the unityInstance exists, as it won't in the local lab.html test.
+    if (window.unityInstance) {
+        // Format the data as a string "x,y"
+        const message = `${gazeData.x},${gazeData.y}`;
+
+        // --- ADDED DEBUGGING LINE ---
+        console.log(`JAVASCRIPT: Sending 'OnGazeUpdate' with data: ${message}`);
+        // ----------------------------
+
+        // Send to GameObject "AIBridgeReceiver", method "OnGazeUpdate"
+        window.unityInstance.SendMessage("AIBridgeReceiver", "OnGazeUpdate", message);
     }
 
     // 2. SANDBOX UI UPDATE: Keep this for lab.html testing
@@ -85,13 +92,14 @@ window.addEventListener('ai_gaze', (e) => {
 
 
 window.addEventListener('ai_action', (e) => {
-    const action = e.detail;
-    
+    const action = e.detail; // e.g., "select" or "deselect"
+
     // 1. CALL C# BRIDGE: Pass action type to Unity
-    if (typeof ActionReceiver === 'function') {
-        ActionReceiver(action);
+    if (window.unityInstance) {
+        // Send to GameObject "AIBridgeReceiver", method "OnAction"
+        window.unityInstance.SendMessage("AIBridgeReceiver", "OnAction", action);
     }
-    
+
     // 2. SANDBOX UI UPDATE: Keep this for lab.html testing
     let indicatorElement = action === 'select' ? winkRightIndicator : winkLeftIndicator;
     if (indicatorElement) {
@@ -102,11 +110,12 @@ window.addEventListener('ai_action', (e) => {
 
 
 window.addEventListener('ai_rotate', (e) => {
-    const direction = e.detail;
-    
+    const direction = e.detail; // e.g., "left" or "right"
+
     // 1. CALL C# BRIDGE: Pass rotation direction to Unity
-    if (typeof RotationReceiver === 'function') {
-        RotationReceiver(direction);
+    if (window.unityInstance) {
+        // Send to GameObject "AIBridgeReceiver", method "OnRotate"
+        window.unityInstance.SendMessage("AIBridgeReceiver", "OnRotate", direction);
     }
 
     // 2. SANDBOX UI UPDATE: Keep this for lab.html testing
@@ -115,17 +124,19 @@ window.addEventListener('ai_rotate', (e) => {
     setTimeout(() => {
         rotateIndicator.classList.remove('active');
         rotateValue.textContent = "--";
-    }, 500); 
+    }, 500);
 });
 
 window.addEventListener('ai_calibration_complete', () => {
     console.log("Lab received: Calibration Complete!");
 
     // 1. CALL C# BRIDGE: Notify Unity that the system is ready
-    if (typeof CalibrationCompleteReceiver === 'function') {
-        CalibrationCompleteReceiver();
+    if (window.unityInstance) {
+        // Send to GameObject "AIBridgeReceiver", method "OnCalibrationComplete"
+        // We send an empty string "" because no data is needed.
+        window.unityInstance.SendMessage("AIBridgeReceiver", "OnCalibrationComplete", "");
     }
-    
+
     // 2. SANDBOX UI UPDATE: Final status update for lab.html testing
     statusText.textContent = "AI Running!";
     aiStatusIndicator.classList.remove('bg-yellow-500');

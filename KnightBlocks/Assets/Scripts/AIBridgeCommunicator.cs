@@ -4,16 +4,12 @@ using System.Globalization; // Required for parsing floats correctly
 
 public class AIBridgeCommunicator : MonoBehaviour
 {
-    // --------------------------------------------------------------------------
-    // 1. C# -> JavaScript Functions (This part was already correct)
-    // --------------------------------------------------------------------------
+    [Header("Cursor Control")]
+    [Tooltip("Assign your UI Image GameObject that has the GazeCursor.cs script")]
+    public GazeCursor gazeCursor;
 
     [DllImport("__Internal")]
     private static extern void StartAIBridge();
-
-    // --------------------------------------------------------------------------
-    // 2. Public Interface (This part was already correct)
-    // --------------------------------------------------------------------------
 
     public void InitiateAISystem()
     {
@@ -47,10 +43,11 @@ public class AIBridgeCommunicator : MonoBehaviour
                 float.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out float y))
             {
                 // Now you have the x and y floats
-                Debug.Log($"[JS -> C#] Gaze Position: X={x:F4}, Y={y:F4}");
-                
-                // --- TODO: Add your cursor control logic here ---
-                // e.g., MoveCursor(x, y);
+                // Debug.Log($"[JS -> C#] Gaze Position: X={x:F4}, Y={y:F4}");
+                if (gazeCursor != null)
+                {
+                    gazeCursor.UpdatePosition(x, y);
+                }
             }
         }
     }
@@ -64,7 +61,10 @@ public class AIBridgeCommunicator : MonoBehaviour
         // actionType will be "select" or "deselect"
         Debug.Log($"[JS -> C#] Action Received: {actionType}");
 
-        // --- TODO: Add your selection logic here ---
+        if (gazeCursor != null)
+        {
+            gazeCursor.PerformAction(actionType);
+        }
     }
 
     /// <summary>
@@ -88,6 +88,9 @@ public class AIBridgeCommunicator : MonoBehaviour
         // We don't need the 'emptyData', but the method signature must accept a string.
         Debug.Log("[JS -> C#] AI Calibration Complete! Head tracking is live.");
 
-        // --- TODO: Add your logic to hide "Calibrating..." UI ---
+        if (gazeCursor != null)
+        {
+            gazeCursor.ShowCursor();
+        }
     }
 }

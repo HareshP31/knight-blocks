@@ -16,9 +16,9 @@ public class GazeCursor : MonoBehaviour
     void Start()
     {
         cursorRect = GetComponent<RectTransform>();
-        parentCanvas = GetComponentInParent<parentCanvas>();
+        parentCanvas = GetComponentInParent<Canvas>();
         raycaster = parentCanvas.GetComponent<GraphicRaycaster>();
-        eventSystem = eventSystem.current;
+        eventSystem = EventSystem.current;
 
         gameObject.SetActive(false);
     }
