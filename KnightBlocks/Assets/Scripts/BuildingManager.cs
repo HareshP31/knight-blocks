@@ -8,6 +8,9 @@ public class BuildingManager : MonoBehaviour
     [Tooltip("The main camera (or camera used for raycasting).")]
     public Camera mainCamera;
 
+    [Tooltip("Assign your GazeCursor GameObject here so we can track the face position.")]
+    public GazeCursor gazeCursor;
+
     // --- RENAMED: This is now the 'ghost' material ---
     [Tooltip("The transparent material to use while placing.")]
     public Material ghostMaterial;
@@ -99,14 +102,6 @@ public class BuildingManager : MonoBehaviour
             currentBlockSize.x = oldZ;
             currentBlockSize.z = oldX;
         }
-        // 2. Swap the X and Z size for the grid logic
-        // This is CRITICAL for the snapping logic to work correctly after rotation
-
-        
-
-        // Note: You might need to re-run the snapping logic here if the rotation
-        // causes the current snapped position to be invalid (e.g., if you
-        // bring back the IsPositionOccupied check). For now, we just rotate.
     }
 
     void Update()
@@ -119,6 +114,13 @@ public class BuildingManager : MonoBehaviour
         if (!uiManager.rotateButton.activeSelf)
         {
             uiManager.ShowRotateButton(true);
+        }
+
+        Vector3 targetScreenPosition = Input.mousePosition;
+
+        if (gazeCursor != null && gazeCursor.gameObject.activeInHierarchy)
+        {
+            targetScreenPosition = gazeCursor.ScreenPosition;
         }
         // We are holding a block, so make it follow the cursor on the grid
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -141,10 +143,7 @@ public class BuildingManager : MonoBehaviour
 
             if (Input.GetMouseButtonDown(1))
             {
-                // Right-click to cancel placement
-                Destroy(currentPlacingBlock);
-                currentPlacingBlock = null;
-                uiManager.ShowRotateButton(false);
+                CancelPlacement();
             }
         }
     }
@@ -197,8 +196,10 @@ public class BuildingManager : MonoBehaviour
     /// <summary>
     // Finalizes the block placement.
     /// </summary>
-    private void PlaceBlock()
+    public void PlaceBlock()
     {
+        if (currentPlacingBlock == null) return;
+
         // --- UPDATED: Set the block to its FINAL, SOLID material ---
         SetBlockMaterial(currentFinalMaterial);
 
@@ -219,6 +220,16 @@ public class BuildingManager : MonoBehaviour
         {
             rotated = false;
             RotateCurrentBlock();
+        }
+    }
+
+    public void CancelPlacement()
+    {
+        if (currentPlacingBlock != null)
+        {
+            Destroy(currentPlacingBlock);
+            currentPlacingBlock = null;
+            uiManager.ShowRotateButton(false);
         }
     }
 

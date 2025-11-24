@@ -13,6 +13,8 @@ public class GazeCursor : MonoBehaviour
     private GameObject lastHoveredObject = null;
     private Canvas parentCanvas;
 
+    public Vector2 ScreenPosition { get; private set; }
+
     void Start()
     {
         cursorRect = GetComponent<RectTransform>();
@@ -20,21 +22,42 @@ public class GazeCursor : MonoBehaviour
         raycaster = parentCanvas.GetComponent<GraphicRaycaster>();
         eventSystem = EventSystem.current;
 
+        if (GetComponent<Image>() != null) GetComponent<Image>().raycastTarget = false;
+        if (GetComponent<RawImage>() != null) GetComponent<RawImage>().raycastTarget = false;
+
         gameObject.SetActive(false);
     }
 
     void Update()
     {
+        if (eventSystem == null)
+        {
+            eventSystem = EventSystem.current;
+            if (eventSystem == null) return;
+        }
+
         pointerEventData = new PointerEventData(eventSystem);
-        pointerEventData.position = cursorRect.position;
+
+        Vector2 screenPos = RectTransformUtility.WorldToScreenPoint(parentCanvas.worldCamera, cursorRect.position);
+
+        ScreenPosition = screenPos;
+        pointerEventData.position = screenPos;
 
         List<RaycastResult> results = new List<RaycastResult>();
         raycaster.Raycast(pointerEventData, results);
 
         GameObject currentHoveredObject = null;
+
         if (results.Count > 0)
         {
-            currentHoveredObject = results[0].gameObject;
+            foreach (var result in results)
+            {
+                if (result.gameObject != gameObject)
+                {
+                    currentHoveredObject = result.gameObject;
+                    break;
+                }
+            }
         }
 
         if (currentHoveredObject != lastHoveredObject)
@@ -42,13 +65,24 @@ public class GazeCursor : MonoBehaviour
             if (lastHoveredObject != null)
             {
                 // Send "Pointer Exit" event to the old object
-                ExecuteEvents.Execute(lastHoveredObject, pointerEventData, ExecuteEvents.pointerExitHandler);
+                ExecuteEvents.ExecuteHierarchy(lastHoveredObject, pointerEventData, ExecuteEvents.pointerExitHandler);
             }
 
             if (currentHoveredObject != null)
             {
-                // Send "Pointer Enter" event to the new object
-                ExecuteEvents.Execute(currentHoveredObject, pointerEventData, ExecuteEvents.pointerEnterHandler);
+                // DEBUG: Let's see exactly what we are hitting and if it has the script
+                DwellSystem checkScript = currentHoveredObject.GetComponentInParent<DwellSystem>();
+                if (checkScript != null)
+                {
+                    Debug.Log($"Gaze hitting '{currentHoveredObject.name}' -> Found DwellSystem on '{checkScript.gameObject.name}'");
+                }
+                else
+                {
+                    Debug.Log($"Gaze hitting '{currentHoveredObject.name}' -> NO DwellSystem found on it or parents.");
+                }
+
+                // Use ExecuteHierarchy to bubble the event up to the button
+                ExecuteEvents.ExecuteHierarchy(currentHoveredObject, pointerEventData, ExecuteEvents.pointerEnterHandler);
             }
 
             lastHoveredObject = currentHoveredObject;
@@ -57,41 +91,11 @@ public class GazeCursor : MonoBehaviour
 
     public void UpdatePosition(float x, float y)
     {
+        if (parentCanvas == null) return;
         RectTransform canvasRect = parentCanvas.GetComponent<RectTransform>();
-        float canvasWidth = canvasRect.rect.width;
-        float canvasHeight = canvasRect.rect.height;
-
-        // Convert normalized (0-1) coordinates to canvas (0-width/height)
-        // NOTE: Your JS seems to invert Y already. If your cursor is upside-down,
-        // change 'y * canvasHeight' to '(1.0f - y) * canvasHeight'.
-        float newX = x * canvasWidth;
-        float newY = y * canvasHeight;
-
+        float newX = x * canvasRect.rect.width;
+        float newY = -y * canvasRect.rect.height;
         cursorRect.anchoredPosition = new Vector2(newX, newY);
-    }
-
-    public void PerformAction(string actionType)
-    {
-        // We only care about the object we are *currently* hovering over
-        if (lastHoveredObject == null)
-        {
-            return;
-        }
-
-        if (actionType == "select") // Right wink (from your AIEngine.js)
-        {
-            // This simulates a "left click"
-            Debug.Log("Triggering Click on: " + lastHoveredObject.name);
-            ExecuteEvents.Execute(lastHoveredObject, pointerEventData, ExecuteEvents.pointerDownHandler);
-            ExecuteEvents.Execute(lastHoveredObject, pointerEventData, ExecuteEvents.pointerUpHandler);
-            ExecuteEvents.Execute(lastHoveredObject, pointerEventData, ExecuteEvents.pointerClickHandler);
-        }
-        else if (actionType == "deselect") // Left wink
-        {
-            // This simulates a "cancel" or "back" action (like pressing Esc)
-            Debug.Log("Triggering Cancel on: " + lastHoveredObject.name);
-            ExecuteEvents.Execute(lastHoveredObject, pointerEventData, ExecuteEvents.cancelHandler);
-        }
     }
 
     public void ShowCursor()

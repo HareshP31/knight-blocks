@@ -5,42 +5,50 @@ using System.Collections;
 
 public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
+    [Header("Settings")]
+    [Tooltip("If checked, the action fires every frame while hovering (good for Zoom/Rotate). If unchecked, it waits for the timer (good for Menus).")]
+    public bool continuousTrigger = false;
     public float dwellTime = 1.5f;
-
     public float activationCooldown = 1f;
 
+    [Header("Events")]
     public UnityEvent onDwell;
-    public static bool isAnyButtonCoolingDown = false;
+    public UnityEvent onPointerExit;
 
+    public static bool isAnyButtonCoolingDown = false;
     private bool isPointerOver = false;
     private float dwellTimer = 0f;
     private bool isTimerRunning = false;
-
     public static MonoBehaviour coroutineRunner;
 
-    [Header("Pointer Hold Events")]
-    public UnityEvent onPointerEnterEvent;
-    public UnityEvent onPointerExitEvent;
+    private void Awake()
+    {
+        if (coroutineRunner == null) coroutineRunner = this;
+    }
 
     private void Update()
     {
         if (isPointerOver)
         {
-            if (!isTimerRunning)
+            if (continuousTrigger)
             {
-                if (!isAnyButtonCoolingDown)
+                onDwell.Invoke();
+            }
+            else
+            {
+                if (!isTimerRunning && !isAnyButtonCoolingDown)
                 {
                     isTimerRunning = true;
                     dwellTimer = 0f;
                 }
-            }
-            else
-            {
-                dwellTimer += Time.deltaTime;
 
-                if (dwellTimer >= dwellTime)
+                if (isTimerRunning)
                 {
-                    TriggerDwell();
+                    dwellTimer += Time.deltaTime;
+                    if (dwellTimer >= dwellTime)
+                    {
+                        TriggerDwellClick();
+                    }
                 }
             }
         }
@@ -49,7 +57,6 @@ public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void OnPointerEnter(PointerEventData eventData)
     {
         isPointerOver = true;
-        onPointerEnterEvent.Invoke();
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -57,12 +64,12 @@ public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         isPointerOver = false;
         isTimerRunning = false;
         dwellTimer = 0f;
-        onPointerExitEvent.Invoke();
+        onPointerExit.Invoke();
     }
 
-    private void TriggerDwell()
+    private void TriggerDwellClick()
     {
-        Debug.Log("Dwell complete on " + gameObject.name);
+        Debug.Log("Dwell Click on " + gameObject.name);
         isTimerRunning = false;
         dwellTimer = 0f;
 
@@ -76,11 +83,9 @@ public class DwellSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private static IEnumerator GlobalCooldown(float cooldownTime)
     {
-        Debug.Log("Starting global cooldown for dwell buttons.");
         isAnyButtonCoolingDown = true;
         yield return new WaitForSeconds(cooldownTime);
         isAnyButtonCoolingDown = false;
-        Debug.Log("Global cooldown for dwell buttons ended.");
     }
 
     private void OnDisable()

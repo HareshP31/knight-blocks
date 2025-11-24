@@ -8,6 +8,9 @@ public class AIBridgeCommunicator : MonoBehaviour
     [Tooltip("Assign your UI Image GameObject that has the GazeCursor.cs script")]
     public GazeCursor gazeCursor;
 
+    [Header("Building Control")]
+    public BuildingManager buildingManager;
+
     [DllImport("__Internal")]
     private static extern void StartAIBridge();
 
@@ -22,16 +25,6 @@ public class AIBridgeCommunicator : MonoBehaviour
 #endif
     }
 
-    // --------------------------------------------------------------------------
-    // 3. JavaScript -> C# Receiver Methods (FIXED)
-    //    These names and parameters now match the "SendMessage" calls
-    //    from the corrected main-controller.js
-    // --------------------------------------------------------------------------
-
-    /// <summary>
-    /// Receives gaze data as a string "x,y" from JavaScript.
-    /// Matches: SendMessage("AIBridgeReceiver", "OnGazeUpdate", "0.5,0.6");
-    /// </summary>
     public void OnGazeUpdate(string data)
     {
         // data will be a string like "0.75,0.32"
@@ -61,9 +54,18 @@ public class AIBridgeCommunicator : MonoBehaviour
         // actionType will be "select" or "deselect"
         Debug.Log($"[JS -> C#] Action Received: {actionType}");
 
-        if (gazeCursor != null)
+        if (buildingManager != null)
         {
-            gazeCursor.PerformAction(actionType);
+            if (actionType == "deselect")
+            {
+                Debug.Log("AI Action: Placing Block (Left Wink)");
+                buildingManager.PlaceBlock();
+            }
+            else if (actionType == "select")
+            {
+                Debug.Log("AI Action: Canceling Placement (Right Wink)");
+                buildingManager.CancelPlacement();
+            }
         }
     }
 
@@ -73,10 +75,7 @@ public class AIBridgeCommunicator : MonoBehaviour
     /// </summary>
     public void OnRotate(string direction)
     {
-        // direction will be "left" or "right"
-        Debug.Log($"[JS -> C#] Rotation Received: {direction}");
-
-        // --- TODO: Add your rotation logic here ---
+        // not needed rn
     }
 
     /// <summary>

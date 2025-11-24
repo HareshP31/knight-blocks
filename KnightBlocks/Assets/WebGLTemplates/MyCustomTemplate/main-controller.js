@@ -77,10 +77,6 @@ window.addEventListener('ai_gaze', (e) => {
         // Format the data as a string "x,y"
         const message = `${gazeData.x},${gazeData.y}`;
 
-        // --- ADDED DEBUGGING LINE ---
-        console.log(`JAVASCRIPT: Sending 'OnGazeUpdate' with data: ${message}`);
-        // ----------------------------
-
         // Send to GameObject "AIBridgeReceiver", method "OnGazeUpdate"
         window.unityInstance.SendMessage("AIBridgeReceiver", "OnGazeUpdate", message);
     }
